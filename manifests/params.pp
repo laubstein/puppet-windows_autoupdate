@@ -15,12 +15,19 @@ class windows_autoupdate::params {
   $reschedule_wait_time                = '10'
   $scheduled_install_day               = '1'
   $scheduled_install_time              = '10'
+  $wu_server                           = ''
+  $wu_status_server                    = ''
   $use_wuserver                        = '0'
 
-  if $::operatingsystemrelease == 'Server 2012' {
+  $p_reg_policies = 'HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate'
+  $p_reg_policies64 = 'HKLM\SOFTWARE\Wow6432Node\Policies\Microsoft\Windows\WindowsUpdate'
+
+  if $::operatingsystemrelease == 'Server 2012' or $::operatingsystemrelease == '2012 R2' {
     $p_reg_key = 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate\Auto Update'
+    $p_reg_keyServ = 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsUpdate'
   } else {
     $p_reg_key = 'HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU'
+    $p_reg_keyServ = 'HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate'
   }
 
 }

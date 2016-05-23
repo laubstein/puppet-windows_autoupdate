@@ -35,6 +35,12 @@
 #
 # [*use_wuserver*]
 # If set to 1, windows autoupdates will use a local WSUS server rather than windows update.
+# 
+# [*wu_server*]
+# If use_wuserver is set to 1, windows autoupdates will use THIS local WSUS server rather than windows update.
+#
+# [*wu_status_server*]
+# If use_wuserver is set to 1, windows autoupdates will use THIS local WSUS status server rather than windows update.
 #
 # [*reschedule_wait_time*]
 # The time period to wait between the time Automatic Updates starts and the time it begins installations
@@ -61,6 +67,8 @@ class windows_autoupdate(
   $scheduled_install_day               = $windows_autoupdate::params::scheduled_install_day,
   $scheduled_install_time              = $windows_autoupdate::params::scheduled_install_time,
   $use_wuserver                        = $windows_autoupdate::params::use_wuserver,
+  $wu_server                           = $windows_autoupdate::params::wu_server,
+  $wu_status_server                    = $windows_autoupdate::params::wu_status_server,
 ) inherits windows_autoupdate::params {
 
   validate_re($no_auto_update,['^[0,1]$'])
@@ -68,64 +76,139 @@ class windows_autoupdate(
   validate_re($scheduled_install_day,['^[0-7]$'])
   validate_re($scheduled_install_time,['^(2[0-3]|1?[0-9])$'])
   validate_re($use_wuserver,['^[0,1]$'])
+  validate_re($wu_server,['^*$'])
+  validate_re($wu_status_server,['^*$'])
   validate_re($reschedule_wait_time,['^(60|[1-5][0-9]|[1-9])$'])
   validate_re($no_auto_reboot_with_logged_on_users,['^[0,1]$'])
 
   service { 'wuauserv':
     ensure    => 'running',
     enable    => true,
-    subscribe => Registry_value['NoAutoUpdate','AUOptions','ScheduledInstallDay', 'ScheduledInstallTime','UseWUServer','RescheduleWaitTime','NoAutoRebootWithLoggedOnUsers'],
+    subscribe => Registry_value["${windows_autoupdate::params::p_reg_key}\\NoAutoUpdate",
+                                "${windows_autoupdate::params::p_reg_policies}\\AU\\NoAutoUpdate",
+                                "${windows_autoupdate::params::p_reg_policies64}\\AU\\NoAutoUpdate",
+                                "${windows_autoupdate::params::p_reg_key}\\AUOptions",
+                                "${windows_autoupdate::params::p_reg_policies}\\AU\\AUOptions",
+                                "${windows_autoupdate::params::p_reg_policies64}\\AU\\AUOptions",
+                                "${windows_autoupdate::params::p_reg_key}\\ScheduledInstallDay",
+                                "${windows_autoupdate::params::p_reg_policies}\\AU\\ScheduledInstallDay",
+                                "${windows_autoupdate::params::p_reg_policies64}\\AU\\ScheduledInstallDay",
+                                "${windows_autoupdate::params::p_reg_key}\\ScheduledInstallTime",
+                                "${windows_autoupdate::params::p_reg_policies}\\AU\\ScheduledInstallTime",
+                                "${windows_autoupdate::params::p_reg_policies64}\\AU\\ScheduledInstallTime",
+                                "${windows_autoupdate::params::p_reg_keyServ}\\WUServer",
+                                "${windows_autoupdate::params::p_reg_policies}\\WUServer",
+                                "${windows_autoupdate::params::p_reg_policies64}\\WUServer",
+                                "${windows_autoupdate::params::p_reg_keyServ}\\WUStatusServer",
+                                "${windows_autoupdate::params::p_reg_policies}\\WUStatusServer",
+                                "${windows_autoupdate::params::p_reg_policies64}\\WUStatusServer",
+                                "${windows_autoupdate::params::p_reg_key}\\RescheduleWaitTime",
+                                "${windows_autoupdate::params::p_reg_policies}\\AU\\RescheduleWaitTime",
+                                "${windows_autoupdate::params::p_reg_policies64}\\AU\\RescheduleWaitTime",
+                                "${windows_autoupdate::params::p_reg_key}\\NoAutoRebootWithLoggedOnUsers",
+                                "${windows_autoupdate::params::p_reg_policies}\\AU\\NoAutoRebootWithLoggedOnUsers",
+                                "${windows_autoupdate::params::p_reg_policies64}\\AU\\NoAutoRebootWithLoggedOnUsers",
+                               ]
   }
 
-  registry_key { $windows_autoupdate::params::p_reg_key:
+  registry_key { [$windows_autoupdate::params::p_reg_key,
+                  $windows_autoupdate::params::p_reg_keyServ,
+                  $windows_autoupdate::params::p_reg_policies,
+                  "$windows_autoupdate::params::p_reg_policies\\AU",
+                  "$windows_autoupdate::params::p_reg_policies64\\AU",
+                 ]:
     ensure => present,
   }
 
-  registry_value { 'NoAutoUpdate':
+  registry_value { ["${windows_autoupdate::params::p_reg_key}\\NoAutoUpdate",
+                    "${windows_autoupdate::params::p_reg_policies}\\AU\\NoAutoUpdate",
+                    "${windows_autoupdate::params::p_reg_policies64}\\AU\\NoAutoUpdate",
+                   ]:
     ensure => present,
-    path   => "${windows_autoupdate::params::p_reg_key}\\NoAutoUpdate",
     type   => 'dword',
     data   => $no_auto_update,
   }
 
-  registry_value { 'AUOptions':
+  registry_value { ["${windows_autoupdate::params::p_reg_key}\\AUOptions",
+                    "${windows_autoupdate::params::p_reg_policies}\\AU\\AUOptions",
+                    "${windows_autoupdate::params::p_reg_policies64}\\AU\\AUOptions",
+                   ]:
     ensure => present,
-    path   => "${windows_autoupdate::params::p_reg_key}\\AUOptions",
     type   => 'dword',
     data   => $au_options,
   }
 
-  registry_value { 'ScheduledInstallDay':
+  registry_value { ["${windows_autoupdate::params::p_reg_key}\\ScheduledInstallDay",
+                    "${windows_autoupdate::params::p_reg_policies}\\AU\\ScheduledInstallDay",
+                    "${windows_autoupdate::params::p_reg_policies64}\\AU\\ScheduledInstallDay",
+                   ]:
     ensure => present,
-    path   => "${windows_autoupdate::params::p_reg_key}\\ScheduledInstallDay",
     type   => 'dword',
     data   => $scheduled_install_day,
   }
 
-  registry_value { 'ScheduledInstallTime':
+  registry_value { ["${windows_autoupdate::params::p_reg_key}\\ScheduledInstallTime",
+                    "${windows_autoupdate::params::p_reg_policies}\\AU\\ScheduledInstallTime",
+                    "${windows_autoupdate::params::p_reg_policies64}\\AU\\ScheduledInstallTime",
+                   ]:
     ensure => present,
-    path   => "${windows_autoupdate::params::p_reg_key}\\ScheduledInstallTime",
     type   => 'dword',
     data   => $scheduled_install_time,
   }
 
-  registry_value { 'UseWUServer':
+  registry_value { ["${windows_autoupdate::params::p_reg_key}\\UseWUServer",
+                    "${windows_autoupdate::params::p_reg_policies}\\AU\\UseWUServer",
+                    "${windows_autoupdate::params::p_reg_policies64}\\AU\\UseWUServer",
+                   ]:
     ensure => present,
-    path   => "${windows_autoupdate::params::p_reg_key}\\UseWUServer",
     type   => 'dword',
     data   => $use_wuserver,
   }
 
-  registry_value { 'RescheduleWaitTime':
+  if ( $use_wuserver == '1') {
+    registry_value { ["${windows_autoupdate::params::p_reg_keyServ}\\WUServer",
+                      "${windows_autoupdate::params::p_reg_policies}\\WUServer",
+                      "${windows_autoupdate::params::p_reg_policies64}\\WUServer",
+                     ]:
+      ensure => present,
+      type   => 'string',
+      data   => $wu_server
+    }
+
+    registry_value { ["${windows_autoupdate::params::p_reg_keyServ}\\WUStatusServer",
+                      "${windows_autoupdate::params::p_reg_policies}\\WUStatusServer",
+                      "${windows_autoupdate::params::p_reg_policies64}\\WUStatusServer",
+                     ]:
+      ensure => present,
+      type   => 'string',
+      data   => $wu_status_server
+    }
+  } else {
+    registry_value { ["${windows_autoupdate::params::p_reg_keyServ}\\WUServer",
+                      "${windows_autoupdate::params::p_reg_policies}\\WUServer",
+                      "${windows_autoupdate::params::p_reg_policies64}\\WUServer",
+                      "${windows_autoupdate::params::p_reg_keyServ}\\WUStatusServer",
+                      "${windows_autoupdate::params::p_reg_policies}\\WUStatusServer",
+                      "${windows_autoupdate::params::p_reg_policies64}\\WUStatusServer",
+                     ]:
+      ensure => absent,
+    }
+  }
+
+  registry_value { ["${windows_autoupdate::params::p_reg_key}\\RescheduleWaitTime",
+                    "${windows_autoupdate::params::p_reg_policies}\\AU\\RescheduleWaitTime",
+                    "${windows_autoupdate::params::p_reg_policies64}\\AU\\RescheduleWaitTime",
+                   ]:
     ensure => present,
-    path   => "${windows_autoupdate::params::p_reg_key}\\RescheduleWaitTime",
     type   => 'dword',
     data   => $reschedule_wait_time,
   }
 
-  registry_value { 'NoAutoRebootWithLoggedOnUsers':
+  registry_value { ["${windows_autoupdate::params::p_reg_key}\\NoAutoRebootWithLoggedOnUsers",
+                    "${windows_autoupdate::params::p_reg_policies}\\AU\\NoAutoRebootWithLoggedOnUsers",
+                    "${windows_autoupdate::params::p_reg_policies64}\\AU\\NoAutoRebootWithLoggedOnUsers",
+                   ]:
     ensure => present,
-    path   => "${windows_autoupdate::params::p_reg_key}\\NoAutoRebootWithLoggedOnUsers",
     type   => 'dword',
     data   => $no_auto_reboot_with_logged_on_users,
   }

@@ -1,3 +1,7 @@
+## 2015-09-11 Release 1.1.1
+- fixing windows 2012 R2 check
+- added wu_server and wu_status_server support
+
 ## 2016-03-29 Release 1.1.0
 - Deprecate mixed case parameters
 
